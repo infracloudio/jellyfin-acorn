@@ -1,0 +1,29 @@
+name:        "Jellyfin Acorn"
+description: "Running Jellyfin on Acorn"
+readme:      "./README.md"
+icon:        "./jellyfin.svg"
+
+containers: {
+    jellyfin: {
+    image: "jellyfin/jellyfin"
+    ports: publish:"8096:8096/http"
+    env: {
+        JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
+    }
+    dirs: {
+        "/config": "volume://jellyfinconfig?subpath=config"
+        "/cache": "volume://jellyfinconfig?subpath=cache"
+        "/media": "volume://jellyfinmedia?subpath=media"
+        // "/media": "./pictures"
+        // "/test": "volume://jellyfin?subpath=media"
+        // "/books": "./books"
+        // "/booksv": "volume://jellyfin?subpath=books"
+
+    }
+}
+}
+
+volumes: {
+    jellyfinconfig: {}
+    jellyfinmedia: {}
+}
