@@ -3,6 +3,11 @@ description: "Running Jellyfin on Acorn"
 readme:      "./README.md"
 icon:        "./jellyfin.svg"
 
+args: {
+  mountdir: "./media"
+  storage: "2G"
+}
+
 containers: {
     jellyfin: {
     image: "jellyfin/jellyfin"
@@ -13,11 +18,8 @@ containers: {
     dirs: {
         "/config": "volume://jellyfinconfig?subpath=config"
         "/cache": "volume://jellyfinconfig?subpath=cache"
-        "/media": "volume://jellyfinmedia?subpath=media"
-        // "/media": "./pictures"
-        // "/test": "volume://jellyfin?subpath=media"
-        // "/books": "./books"
-        // "/booksv": "volume://jellyfin?subpath=books"
+        "/media": args.mountdir
+        "/media2": "volume://jellyfinmedia?subpath=media"
 
     }
 }
@@ -25,5 +27,7 @@ containers: {
 
 volumes: {
     jellyfinconfig: {}
-    jellyfinmedia: {}
+    jellyfinmedia: {
+        size: args.storage
+    }
 }
