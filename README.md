@@ -4,7 +4,13 @@
 Jellyfin is the volunteer-built media solution that puts you in control of your media. Stream to any device from your own server, with no strings attached. Your media, your server, your way.
  
 ## Using s3 as your storage.
-If you have all your media on s3 and you just want to mount that to jellyfin you can give the s3 link using `mountdir` field. Accordingly you can modify the storge for the media by default it is 2GB you can use the `storage` field to give the storge. If you want to give storage as 10GB you can give `10G` to the storage field.
+If you have all your media on s3 and you just want to copy those file to the local jellyfin directory you will need to pass three field 
+- access_key
+- secret_key
+- bucket_name
+
+It will copy all your s3 media to the jellyfin volume.Once your jellyfin server it up and running and if you add more media content after that it will sync it in every 30 minutes. Accordingly you can modify the storge for the media by default it is 2GB you can use the `storage` field to give the storge. If you want to give storage as 10GB you can give `10G` to the storage field.
+While selecting the folder select `jellyfinmedia` directory as we are mounting the volume to that directory.
 
 ## Mount local directory.
 
