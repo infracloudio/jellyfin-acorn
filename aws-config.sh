@@ -21,7 +21,7 @@ echo "bucket name is new \$val"
 /usr/local/bin/aws s3 cp s3://\$AWS_S3_BUCKET /jellyfinmedia --recursive
 EOF
     chmod +x cron_aws_script.sh
-    echo "*/3 * * * * root /bin/bash /cron_aws_script.sh >> /cron_log.txt 2>&1" >> /etc/crontab
+    echo "*/30 * * * * root /bin/bash /cron_aws_script.sh >> /cron_log.txt 2>&1" >> /etc/crontab
     service cron start
 }
 

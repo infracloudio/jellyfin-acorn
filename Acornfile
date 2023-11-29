@@ -4,68 +4,70 @@ readme:      "./README.md"
 icon:        "./jellyfin.svg"
 
 args: {
-  storage: "2G"
-  access_key: ""
-  secret_key: ""
-  bucket_name: ""
+	storage:     "2G"
+	access_key:  ""
+	secret_key:  ""
+	bucket_name: ""
 }
 
 containers: {
-    jellyfin: {
-        image: "jellyfin/jellyfin"
-        ports: publish:"8096:8096/http"
-        env: {
-            JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
-        }
-        sidecars: "stage-data": {
-        // This sidecar will run first and only when it exits with exit code 0 will the 
-        // parent "web" container start
-            init: true
-            env: {
-                AWS_ACCESS_KEY_ID: args.access_key
-                AWS_SECRET_ACCESS_KEY: args.secret_key
-                AWS_S3_BUCKET: args.bucket_name
-            }
-            image: "nginx"
-                dirs: {
-                    "/aws-config.sh": "./aws-config.sh"
-                    "/jellyfinmedia": "volume://jellyfinmedia"
+	jellyfin: {
+		image: "jellyfin/jellyfin"
+		ports: publish: "8096:8096/http"
+		env: {
+			JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
+		}
+		if args.bucket_name != "" {
+			sidecars: {
+				// This sidecar will run first and only when it exits with exit code 0 will the 
+				// parent "web" container start
+				stagedata: {
+					init: true
+					env: {
+						AWS_ACCESS_KEY_ID:     args.access_key
+						AWS_SECRET_ACCESS_KEY: args.secret_key
+						AWS_S3_BUCKET:         args.bucket_name
+					}
+					image: "nginx"
+					dirs: {
+						"/aws-config.sh": "./aws-config.sh"
+						"/jellyfinmedia": "volume://jellyfinmedia"
+					}
+					command: "/bin/bash -c ./aws-config.sh"
+				}
+			}
+		}
+		dirs: {
+			"/config":        "volume://jellyfinconfig?subpath=config"
+			"/cache":         "volume://jellyfinconfig?subpath=cache"
+			"/jellyfinmedia": "volume://jellyfinmedia"
+		}
+	}
+	if args.bucket_name != "" {
+		bucketsync: {
+			build: {
+				context:    "."
+				dockerfile: "Dockerfile"
+			}
+			env: {
+				AWS_ACCESS_KEY_ID:     args.access_key
+				AWS_SECRET_ACCESS_KEY: args.secret_key
+				AWS_S3_BUCKET:         args.bucket_name
+				CRONTAB_STATUS:        "true"
+			}
+			dirs: {
+				"/aws-config.sh": "./aws-config.sh"
+				"/jellyfinmedia": "volume://jellyfinmedia"
+			}
+			dependsOn: ["jellyfin"]
 
-                }
-                command: "/bin/bash -c ./aws-config.sh"
-        }
-        dirs: {
-            "/config": "volume://jellyfinconfig?subpath=config"
-            "/cache": "volume://jellyfinconfig?subpath=cache"
-            "/jellyfinmedia": "volume://jellyfinmedia"
-
-        }
-    }
-    bucketsync:{
-        //image: "nginx"
-        build: {
-            context: "."
-            dockerfile: "Dockerfile"
-        }
-        env: {
-                AWS_ACCESS_KEY_ID: args.access_key
-                AWS_SECRET_ACCESS_KEY: args.secret_key
-                AWS_S3_BUCKET: args.bucket_name
-                CRONTAB_STATUS: "true"
-        }
-        dirs: {
-            "/aws-config.sh": "./aws-config.sh"
-            "/jellyfinmedia": "volume://jellyfinmedia"
-        }
-        dependsOn: ["jellyfin"]
-
-    }
+		}
+	}
 }
 
-
 volumes: {
-    jellyfinconfig: {}
-    jellyfinmedia: {
-        size: args.storage
-    }
+	jellyfinconfig: {}
+	jellyfinmedia: {
+		size: args.storage
+	}
 }
