@@ -2,12 +2,9 @@
 
 [Jellyfin](https://jellyfin.org/) is the volunteer-built media solution that puts you in control of your media. Stream to any device from your own server, with no strings attached. Your media, your server, your way.
 
-Jellyfin is a popular media server solution, valued for its open-source nature and robust features that empower users to manage and stream their media content seamlessly. When deployed on [Acorn](http://www.acorn.io) platform offering a generous free sandbox accessible to all through GitHub registration, Jellyfin gains distinct advantages.
+Jellyfin is a popular media server solution, valued for its open-source nature and robust features that empower users to manage and stream their media content seamlessly. When deployed on [Acorn](http://www.acorn.io) platform offering a generous free sandbox accessible to all through GitHub registration, Jellyfin gains distinct advantages. To deploy an application on Acorn we need to define our application as an [Acornfile](https://docs.acorn.io/reference/acornfile), which will produce the Acorn Image that we can deploy on the platform.  In this tutorial, we will explore how to provision a sample Jellyfin Server on Acorn.
 
-To deploy an application on Acorn we need to define our application as an [Acornfile](https://docs.acorn.io/reference/acornfile), which will produce the Acorn Image that we can deploy on the platform.  In this tutorial, we will explore how to provision a sample Jellyfin Server on Acorn.
-
-If you’re the kind of person who likes to skip to the end, you can [deploy the sample application in your sandbox now](https://acorn.io/run/ghcr.io/infracloudio/jellyfin-acorn:v4.3.0-1?ref=slayer321&name=moodle) and just start poking around in it.  Sandbox deployments in Acorn are restricted by size, and run for two hours, so it should provide plenty of time for you to evaluate and test anything. You can start them over as often as you like, or you can upgrade to a paid Pro account if you want to keep Moodle application running for long durations
-
+If you want to skip to the end, just click [Run in Acorn](https://acorn.io/run/ghcr.io/infracloudio/jellyfin-acorn:v10.%23.%23-%23?ref=slayer321&name=jellyfin) to launch the app immediately in a free sandbox environment. All you need to join is a GitHub ID to create an account.
 
 If you want to follow along, I’ll walk through the steps to deploy Jellyfin using Acorn.
 
@@ -36,9 +33,9 @@ In the Acorn platform, there are two ways you can try this sample application.
 1. Using Acorn platform dashboard.
 2. Using CLI
 
-The first way is the easiest one, where, in just a few clicks, you can deploy the Moodle application on the platform and start using it. However, if you want to customize the application, use the second option.
+The first way is the easiest one, where, in just a few clicks, you can deploy the jellyfin application on the platform and start using it. However, if you want to customize the application, use the second option.
 
-## Running the application using Dashboard
+## Deploying Using Acorn Dashboard
 
 In this option you use the published Acorn application image to deploy the Jellyfin application in just a few clicks. It allows you to deploy your applications faster without any additional configurations. Let us see below how you can deploy Jellyfin app to the Acorn platform dashboard.
 
@@ -52,19 +49,19 @@ In this option you use the published Acorn application image to deploy the Jelly
    ```
    ghcr.io/infracloudio/jellyfin-acorn:v10.#.#-#
    ```
-![](./assets/moodle-deploy-preview.png)
+![](./assets/jellyfin-deploy-preview.png)
 
 _Note: The App will be deployed in the Acorn Sandbox Environment. As the App is provisioned on AcornPlatform in the sandbox environment it will only be available for 2 hrs and after that it will be shutdown. Upgrade to a pro account to keep it running longer_.
 
 4. Once the Acorn is running, you can access it by clicking the Endpoint or the redirect link.
    4.1. Running Application on Acorn
-   ![](./assets/moodle-platform-dashboard.png)
+   ![](./assets/jellyfin-platform-dashboard.png)
    4.2. Running Jellyfin
-   ![](./assets/moodle-dashboard.png)
+   ![](./assets/jellyfin-dashboard.png)
 
 
-## Running the Application using acorn CLI
-As mentioned previously, running the acorn application using CLI lets you understand the Acornfile. With the CLI option, you can customize the sample app to your requirement or use your Acorn knowledge to run your own Moodle application.
+## Deploying Using Acorn CLI
+As mentioned previously, running the acorn application using CLI lets you understand the Acornfile. With the CLI option, you can customize the sample app to your requirement or use your Acorn knowledge to run your own Jellyfin application.
 
 To run the application using CLI you first need to clone the source code repository on your machine.
 
@@ -73,7 +70,16 @@ $ git clone https://github.com/infracloudio/jellyfin-acorn.git
 ```
 Once cloned here’s how the directory structure will look.
 
-![](./assests/moodle-root-dir.png)
+```
+.
+├── Acornfile
+├── aws-config.sh
+├── Dockerfile.bucketsync
+├── Dockerfile.sidecar
+├── jellyfin.svg
+├── LICENSE
+└── README.md
+```
 
 ### Understanding the Acornfile
 
@@ -83,10 +89,9 @@ Below is the Acornfile for deploying the Jellyfin app that we created earlier:
 
 ```
 args: {
-	storage:     "2G"
-	access_key:  ""
-	secret_key:  ""
-	bucket_name: ""
+    storage:     "2G"
+    ...
+    bucket_name: ""
 }
 
 containers: {
@@ -94,58 +99,56 @@ containers: {
         image: "jellyfin/jellyfin:10.8.13"
         ports: publish: "8096:8096/http"
         env: {
-        JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
+            JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
         }
+        if args.bucket_name != "" {
         sidecars: {
             stagedata: {
             init: true
             env: {
-            AWS_ACCESS_KEY_ID:     args.access_key
-            AWS_SECRET_ACCESS_KEY: args.secret_key
-            AWS_S3_BUCKET:         args.bucket_name
+                AWS_ACCESS_KEY_ID:     args.access_key
+                AWS_SECRET_ACCESS_KEY: args.secret_key
+                AWS_S3_BUCKET:         args.bucket_name
             }
-            image: "nginx"
+            image: "ghcr.io/infracloudio/jellyfin-sidecar:v0.0.1"
             dirs: {
-            "/aws-config.sh": "./aws-config.sh"
+                "/aws-config.sh": "./aws-config.sh"
+                "/jellyfinmedia": "volume://jellyfinmedia"
+                }
+            }
+        }
+        }
+        dirs: {
+            "/config":        "volume://jellyfinconfig?subpath=config"
+            "/cache":         "volume://jellyfinconfig?subpath=cache"
             "/jellyfinmedia": "volume://jellyfinmedia"
-            }
-            command: "/bin/bash -c ./aws-config.sh"
-            }
-        }
-        dirs: {
-        "/config":        "volume://jellyfinconfig?subpath=config"
-        "/cache":         "volume://jellyfinconfig?subpath=cache"
-        "/jellyfinmedia": "volume://jellyfinmedia"
         }
     }
-    bucketsync: {
-        build: {
-        context:    "."
-        dockerfile: "Dockerfile"
+    if args.bucket_name != "" {
+        bucketsync: {
+            image: "ghcr.io/infracloudio/jellyfin-bucketsync:v0.0.2"
+            env: {
+                AWS_ACCESS_KEY_ID:     args.access_key
+                AWS_SECRET_ACCESS_KEY: args.secret_key
+                AWS_S3_BUCKET:         args.bucket_name
+                CRONTAB_STATUS:        "true"
+            }
+            dirs: {
+                "/aws-config.sh": "./aws-config.sh"
+                "/jellyfinmedia": "volume://jellyfinmedia"
+            }
         }
-        env: {
-        AWS_ACCESS_KEY_ID:     args.access_key
-        AWS_SECRET_ACCESS_KEY: args.secret_key
-        AWS_S3_BUCKET:         args.bucket_name
-        CRONTAB_STATUS:        "true"
-        }
-        dirs: {
-        "/aws-config.sh": "./aws-config.sh"
-        "/jellyfinmedia": "volume://jellyfinmedia"
-        }
-        dependsOn: ["jellyfin"]
     }
-	
 }
 
 volumes: {
-	jellyfinconfig: {}
-	jellyfinmedia: {size: args.storage}
+    jellyfinconfig: {}
+    jellyfinmedia: {size: args.storage}
 }
 ```
 
 
-here are 2 requirements for running Moodle Application
+There are 2 requirements for running jellyfin Application
 - Jellyfin Application
 - s3bucketsync
 
@@ -160,11 +163,9 @@ The above Acornfile has the following elements:
        - **dirs**: this field is used to mount our application to a specific directory.
        - **sidecars**: using sidecar we are configuring the s3 bucket
    - **bucketsync**: 
-       - **build**: using nginx as base image with some s3 config
-       - **ports**:  port where our streaming application is listening on.
+       - **image**: using aws cli image to sync bucket
        - **env**:  In the env section we are providing all the env variables which the application will be using.
        - **dirs**: this field is used to mount our application to a specific directory.
-       - **dependsOn**: bucketsync depends on jellyfin.
 - **Volumes**: Volmes which we are referring inside the containers dirs field
 
 
@@ -177,16 +178,16 @@ $ acorn run -n jellyfin . --access_key <>  --bucket_name <> --secret_key <>
 
 Below is what the output looks like.
 
-![](./assets/moodle-local-run.png)
+![](./assets/jellyfin-local-run.png)
 
 
 ## Jellyfin Application
 
 In this tutorial till now we show how we can deploy our jellyfin server with our media content on s3 bucket by providing all the details. 
 
-Once we provide all the login detils and when selecting the folder select it as jellyfinmedia as that's where we have copied the s3 media.Below is what our jellyfin dashboard looks like once we have everything running.
+Once we provide all the login details and when selecting the folder select it as `/jellyfinmedia` as that's where we have copied the s3 media. Below is what our jellyfin dashboard looks like once we have everything running.You can see all the four photos that I have on s3 bucket.
 
-![](./assets/moodle-dashboard.png)
+![](./assets/jellyfin-dashboard.png)
 
 If you are looking to host your local media to jellyfin you just need to make some minor changes to acornfile and run it using acorn cli from your local system.You need to remove two fields, first is the whole `sidecars` field and then the `bucketsync` field inside the current acornfile.Now replace the `/jellyfinmedia` field with your local directory. Currently if looks like `"/jellyfinmedia": "volume://jellyfinmedia"` change it to `"/jellyfinmedia": "./your/localmedia/path"`.
 
