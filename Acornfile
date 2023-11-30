@@ -28,12 +28,11 @@ containers: {
 						AWS_SECRET_ACCESS_KEY: args.secret_key
 						AWS_S3_BUCKET:         args.bucket_name
 					}
-					image: "nginx"
+					image: "ghcr.io/infracloudio/jellyfin-sidecar:v0.0.1"
 					dirs: {
 						"/aws-config.sh": "./aws-config.sh"
 						"/jellyfinmedia": "volume://jellyfinmedia"
 					}
-					command: "/bin/bash -c ./aws-config.sh"
 				}
 			}
 		}
@@ -45,10 +44,7 @@ containers: {
 	}
 	if args.bucket_name != "" {
 		bucketsync: {
-			build: {
-				context:    "."
-				dockerfile: "Dockerfile"
-			}
+			image: "ghcr.io/infracloudio/jellyfin-bucketsync:v0.0.2"
 			env: {
 				AWS_ACCESS_KEY_ID:     args.access_key
 				AWS_SECRET_ACCESS_KEY: args.secret_key
@@ -59,7 +55,6 @@ containers: {
 				"/aws-config.sh": "./aws-config.sh"
 				"/jellyfinmedia": "volume://jellyfinmedia"
 			}
-			dependsOn: ["jellyfin"]
 
 		}
 	}

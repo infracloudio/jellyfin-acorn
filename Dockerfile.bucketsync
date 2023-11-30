@@ -1,0 +1,4 @@
+FROM amazon/aws-cli:2.14.4
+
+COPY aws-config.sh aws-config.sh
+ENTRYPOINT bash -c "./aws-config.sh"
