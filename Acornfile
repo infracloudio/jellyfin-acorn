@@ -12,7 +12,7 @@ args: {
 
 containers: {
 	jellyfin: {
-		image: "jellyfin/jellyfin"
+		image: "jellyfin/jellyfin:10.8.13"
 		ports: publish: "8096:8096/http"
 		env: {
 			JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
