@@ -24,4 +24,3 @@ dirs: {
 After making above changes to Acornfile run this command `acorn run -n jellyfin .`
 
 _Note: Once you have your jellyfin server running on acorn. When you click on the given click on the UI sometimes it ask's you to add server you can click on it and delete it and refresh the page. You will get the page where it will ask you to create a new account._
-
