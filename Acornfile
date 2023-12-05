@@ -1,0 +1,68 @@
+name:        "Jellyfin Acorn"
+description: "Running Jellyfin on Acorn"
+readme:      "./README.md"
+icon:        "./jellyfin.svg"
+
+args: {
+	storage:     "2G"
+	access_key:  ""
+	secret_key:  ""
+	bucket_name: ""
+}
+
+containers: {
+	jellyfin: {
+		image: "jellyfin/jellyfin:10.8.13"
+		ports: publish: "8096:8096/http"
+		env: {
+			JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
+		}
+		if args.bucket_name != "" {
+			sidecars: {
+				// This sidecar will run first and only when it exits with exit code 0 will the 
+				// parent "web" container start
+				stagedata: {
+					init: true
+					env: {
+						AWS_ACCESS_KEY_ID:     args.access_key
+						AWS_SECRET_ACCESS_KEY: args.secret_key
+						AWS_S3_BUCKET:         args.bucket_name
+					}
+					image: "ghcr.io/infracloudio/jellyfin-sidecar:v0.0.1"
+					dirs: {
+						"/aws-config.sh": "./aws-config.sh"
+						"/jellyfinmedia": "volume://jellyfinmedia"
+					}
+				}
+			}
+		}
+		dirs: {
+			"/config":        "volume://jellyfinconfig?subpath=config"
+			"/cache":         "volume://jellyfinconfig?subpath=cache"
+			"/jellyfinmedia": "volume://jellyfinmedia"
+		}
+	}
+	if args.bucket_name != "" {
+		bucketsync: {
+			image: "ghcr.io/infracloudio/jellyfin-bucketsync:v0.0.2"
+			env: {
+				AWS_ACCESS_KEY_ID:     args.access_key
+				AWS_SECRET_ACCESS_KEY: args.secret_key
+				AWS_S3_BUCKET:         args.bucket_name
+				CRONTAB_STATUS:        "true"
+			}
+			dirs: {
+				"/aws-config.sh": "./aws-config.sh"
+				"/jellyfinmedia": "volume://jellyfinmedia"
+			}
+
+		}
+	}
+}
+
+volumes: {
+	jellyfinconfig: {}
+	jellyfinmedia: {
+		size: args.storage
+	}
+}
