@@ -4,12 +4,17 @@
 
 Jellyfin is a popular media server solution, valued for its open-source nature and robust features that empower users to manage and stream their media content seamlessly. When deployed on [Acorn](http://www.acorn.io) platform offering a generous free sandbox accessible to all through GitHub registration, Jellyfin gains distinct advantages. To deploy an application on Acorn we need to define our application as an [Acornfile](https://docs.acorn.io/reference/acornfile), which will produce the Acorn Image that we can deploy on the platform.  In this tutorial, we will explore how to provision a sample Jellyfin Server on Acorn.
 
-If you want to skip to the end, just click [Run in Acorn](https://acorn.io/run/ghcr.io/infracloudio/jellyfin-acorn:v10.%23.%23-%23?ref=slayer321&name=jellyfin) to launch the app immediately in a free sandbox environment. All you need to join is a GitHub ID to create an account.
+We will be deploying Jellyfin in conjuction with [Wasabi](https://wasabi.com/hot-cloud-storage/),one of the most affordable online storage options available. You can store all of your media on it with as little as $6.99 TB/Month, with no egress charges. 
+
+To start using the application, you need to create your own Wasabi S3 bucket by registering to Wasabi. Once signed in, populate the Wasabi S3 bucket with your favourite Photos, Movies or Videos and generate Access Credentials. We will be using these credentials to connect to Jellyfin to download the Media using [Rclone](https://rclone.org/). We have two Rclone Jobs : rclone-init: to perform one-time initial sync of Jellyfin with Wasabi S3 and rclone-cronjob: runs as a scheduled cronjob for periodic Data Sync from the Wasabi S3 bucket and Jellyfn Media volume with default cron schedule of every 6hrs.
+
+If you want to skip to the end, just click below to launch the app immediately in a free sandbox environment. All you need is a GitHub ID to create an account and provide Wasabi S3 configs in Advanced Configurations.
+
+[Run in Acorn](https://acorn.io/run/ghcr.io/infracloudio/jellyfin-acorn:v10.%23.%23-%23?ref=slayer321&name=jellyfin)
 
 If you want to follow along, I’ll walk through the steps to deploy Jellyfin using Acorn.
 
 _Note: Everything shown in this tutorial can be found in [this repository](https://github.com/infracloudio/jellyfin-acorn)_.
-
 
 ## Pre-requisites
 
@@ -17,12 +22,15 @@ _Note: Everything shown in this tutorial can be found in [this repository](https
 - A GitHub account is required to sign up and use the Acorn Platform.
 
 ## Acorn Login
-Login to the [Acorn Platform](http://beta.acorn.io) using the GitHub Sign-In option with your GitHub user.
-![](./assets/acorn-login-page.png)
+
+Log in to the [Acorn Platform](https://acorn.io) using the GitHub Sign-In option with your GitHub user.
+
+![Login Page](./assets/acorn-login-page.png)
 
 After the installation of Acorn CLI for your OS, you can login to the Acorn platform.
-```
-$ acorn login beta.acorn.io
+
+```sh
+$ acorn login
 ```
 
 
@@ -33,11 +41,11 @@ In the Acorn platform, there are two ways you can try this sample application.
 1. Using Acorn platform dashboard.
 2. Using CLI
 
-The first way is the easiest one, where, in just a few clicks, you can deploy the jellyfin application on the platform and start using it. However, if you want to customize the application, use the second option.
+Using Acorn Cloud Platform is the quickest and easiest way, where in just a few clicks, you can deploy the jellyfin application on the platform and start using it. However, if you want to customize the application, you can use the Acorn CLI.
 
 ## Deploying Using Acorn Dashboard
 
-In this option you use the published Acorn application image to deploy the Jellyfin application in just a few clicks. It allows you to deploy your applications faster without any additional configurations. Let us see below how you can deploy Jellyfin app to the Acorn platform dashboard.
+We will be using the published Acorn application image to deploy the Jellyfin application in just a few clicks. It allows you to deploy your applications faster without any additional configurations. Let us see below how you can deploy Jellyfin app to the Acorn platform dashboard.
 
 1. Log in to the [Acorn Platform](https://acorn.io/auth/login)  using the GitHub Sign-In option with your GitHub user.
 2. Select the “Create Acorn” option.
@@ -73,9 +81,7 @@ Once cloned here’s how the directory structure will look.
 ```
 .
 ├── Acornfile
-├── aws-config.sh
-├── Dockerfile.bucketsync
-├── Dockerfile.sidecar
+├── rclone-config-script.sh
 ├── jellyfin.svg
 ├── LICENSE
 └── README.md
@@ -83,91 +89,119 @@ Once cloned here’s how the directory structure will look.
 
 ### Understanding the Acornfile
 
-We have the Jellyfin Application ready. Now to run the application we need an Acornfile which describes the whole application without all of the boilerplate of Kubernetes YAML files. The Acorn CLI is used to build, deploy, and operate Acorn on the Acorn cloud platform.  It also can work on any Kubernetes cluster running the open source Acorn Runtime. 
+We have the Jellyfin Application ready. Now to run the application we need an Acornfile which describes the whole application without all of the boilerplate of Kubernetes YAML files. The Acorn CLI is used to build, deploy, and operate Acorn on the Acorn cloud platform.
 
 Below is the Acornfile for deploying the Jellyfin app that we created earlier:
 
 ```
 args: {
-    storage:     "2G"
-    ...
-    bucket_name: ""
+	// Optional: Jellyfin media volume size
+	storage:      "2G"
+	// Required: Wasabi bucket name
+	bucket_name:  ""
+	// Required: Wasabi bucket region. Default: us-east-1
+	region:       "us-east-1"
+	// Required: Wasabi bucket url. Default: s3.wasabisys.com
+	endpoint_url: "s3.wasabisys.com"
+	// Required: Wasabi access key
+	access_key:      ""
+	// Required: Wasabi secret key
+	secret_key:      ""
+	// Optional: Bucket sync job cron schedule. Default: every 6 hours.
+  rclone_schedule: "0 */6 * * *"
 }
 
 containers: {
-    jellyfin: {
-        image: "jellyfin/jellyfin:10.8.13"
-        ports: publish: "8096:8096/http"
-        env: {
-            JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
-        }
-        if args.bucket_name != "" {
-        sidecars: {
-            stagedata: {
-            init: true
-            env: {
-                AWS_ACCESS_KEY_ID:     args.access_key
-                AWS_SECRET_ACCESS_KEY: args.secret_key
-                AWS_S3_BUCKET:         args.bucket_name
-            }
-            image: "ghcr.io/infracloudio/jellyfin-sidecar:v0.0.1"
-            dirs: {
-                "/aws-config.sh": "./aws-config.sh"
-                "/jellyfinmedia": "volume://jellyfinmedia"
-                }
-            }
-        }
-        }
-        dirs: {
-            "/config":        "volume://jellyfinconfig?subpath=config"
-            "/cache":         "volume://jellyfinconfig?subpath=cache"
-            "/jellyfinmedia": "volume://jellyfinmedia"
-        }
-    }
-    if args.bucket_name != "" {
-        bucketsync: {
-            image: "ghcr.io/infracloudio/jellyfin-bucketsync:v0.0.2"
-            env: {
-                AWS_ACCESS_KEY_ID:     args.access_key
-                AWS_SECRET_ACCESS_KEY: args.secret_key
-                AWS_S3_BUCKET:         args.bucket_name
-                CRONTAB_STATUS:        "true"
-            }
-            dirs: {
-                "/aws-config.sh": "./aws-config.sh"
-                "/jellyfinmedia": "volume://jellyfinmedia"
-            }
-        }
-    }
+	jellyfin: {
+		image: "jellyfin/jellyfin:10.8.13"
+		ports: publish: "8096:8096/http"
+		env: {
+			JELLYFIN_PublishedServerUrl: "@{services.jellyfin.endpoint}"
+		}
+		dirs: {
+			"/config":        "volume://jellyfinconfig?subpath=config"
+			"/cache":         "volume://jellyfinconfig?subpath=cache"
+			"/jellyfinmedia": "volume://jellyfinmedia"
+		}
+	}
+}
+
+jobs: {
+  "rclone-init": {
+      image: "rclone/rclone:latest"
+      env: {
+        RCLONE_CONFIG_MYS3_TYPE: "s3"
+        AWS_ACCESS_KEY_ID:       args.access_key
+        AWS_SECRET_ACCESS_KEY:   args.secret_key
+        AWS_S3_BUCKET:           args.bucket_name
+				REGION:                  args.region
+				ENDPOINT_URL: 				   args.endpoint_url
+      }
+      dirs: {
+        "./rclone-config-script.sh": "./rclone-config-script.sh"
+        "/jellyfinmedia": "volume://jellyfinmedia"
+      }
+      entrypoint: ["/bin/sh", "-c", "./rclone-config-script.sh"]
+  }
+  "rclone-cronjob": {
+      image: "rclone/rclone:latest"
+      env: {
+        RCLONE_CONFIG_MYS3_TYPE: "s3"
+        AWS_ACCESS_KEY_ID:       args.access_key
+        AWS_SECRET_ACCESS_KEY:   args.secret_key
+        AWS_S3_BUCKET:           args.bucket_name
+				REGION:                  args.region
+				ENDPOINT_URL: 				   args.endpoint_url
+      }
+      dirs: {
+        "./rclone-config-script.sh": "./rclone-config-script.sh"
+        "/jellyfinmedia": "volume://jellyfinmedia"
+      }
+      entrypoint: ["/bin/sh", "-c", "./rclone-config-script.sh"]
+      schedule: args.rclone_schedule
+  }
 }
 
 volumes: {
-    jellyfinconfig: {}
-    jellyfinmedia: {size: args.storage}
+	jellyfinconfig: {
+		size: 1G
+	}
+	jellyfinmedia: {
+		size: args.storage
+	}
 }
 ```
 
 
-There are 2 requirements for running jellyfin Application
-- Jellyfin Application
-- s3bucketsync
+We require below 2 components for running Jellyfin:
+- Jellyfin app
+- rclone jobs : init-job and periodic-job
 
 The above Acornfile has the following elements:
 
-- **Args**: Which is used to take the user args.
-- **Containers**:  We define different containers with following configurations:
-   - **jellyfin**: 
-       - **image**: using jellyfin image
-       - **ports**:  port where our jellyfin application is listening on.
-       - **env**:  In the env section we are providing all the env variables which the application will be using.
-       - **dirs**: this field is used to mount our application to a specific directory.
-       - **sidecars**: using sidecar we are configuring the s3 bucket
-   - **bucketsync**: 
-       - **image**: using aws cli image to sync bucket
-       - **env**:  In the env section we are providing all the env variables which the application will be using.
-       - **dirs**: this field is used to mount our application to a specific directory.
-- **Volumes**: Volmes which we are referring inside the containers dirs field
-
+- **Args**: Required and Optional User Arguments for running Jellyfin 
+  - **storage**: Optional: Jellyfin media volume size. Default Value : 2G
+  - **bucket_name**: Required: Wasabi bucket name
+  - **region**: Required: Wasabi bucket region. Default: us-east-1
+  - **endpoint_url**: Required: Wasabi bucket url. Default: s3.wasabisys.com
+  - **access_key**: Required: Wasabi access key
+  - **secret_key**: Required: Wasabi secret key
+  - **rclone_schedule**: Optional: Rclone Cron Job schedule to periodically sync the Wasabi S3 bucket with Jellyfin Media Volume. Default: every 6 hours.
+- **Containers**: We define the Jellyfinserver container with following configurations:
+  - **jellyfin**:
+    - **scale**: Jellyfin Replicas
+    - **image**: It defines Jellyfin image
+    - **ports**: ports required by the application.
+    - **env**: Environment variables for running the Jellyfin server.
+    - **dirs**: config, cache and Jellyfin Media mounts for the app.
+- **Jobs**: 
+  - **rclone-init**: Rclone Job for initial Data Sync from the Wasabi S3 bucket and Jellyfin Media volume.
+    - **image**: Rclone image
+    - **env**: Environment variables for running the Jellyfin.
+    - **dirs**: Rclone script to create rclone configs for wasabi s3 sync and Jellyfin Media Volume mount.
+    - **entrypoint**: Run the config script on container start.
+  - **rclone-cronjob**: Rclone Cron Job for periodic Data Sync from the Wasabi S3 bucket and Jellyfn Media volume with default cron schedule of every 6hrs. 
+- **Volumes**: Volumes to store persistent data in your applications
 
 ### Running the Application
 We have already logged in using Acorn CLI now you can directly deploy applications on your sandbox on the Acorn platform. Run the following command from the root of the directory.
