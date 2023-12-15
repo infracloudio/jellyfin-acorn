@@ -8,6 +8,16 @@ We will be deploying Jellyfin in conjuction with [Wasabi](https://wasabi.com/hot
 
 To start using the application, you need to create your own Wasabi S3 bucket by registering to Wasabi. Once signed in, populate the Wasabi S3 bucket with your favourite Photos, Movies or Videos and generate Access Credentials. We will be using these credentials to connect to Jellyfin to download the Media using [Rclone](https://rclone.org/). We have two Rclone Jobs : rclone-init: to perform one-time initial sync of Jellyfin with Wasabi S3 and rclone-cronjob: runs as a scheduled cronjob for periodic Data Sync from the Wasabi S3 bucket and Jellyfn Media volume with default cron schedule of every 6hrs.
 
+Steps to set up your Wasabi S3 Bucket:
+
+- Sign in to Wasabi - https://console.wasabisys.com/login
+- Go to Buckets and select Create Bucket. Add the required details such as name and region. 
+Please Note: Be sure to provide the corresponding "endpoint URL" in the "args" while deploying Plex. Current Defaults- region:"us-east-1" and endpoint_url:"s3.wasabisys.com" 
+![Select Region](./assets/select-region.png)
+- Click on Next and choose the required Bucket Settings
+![Create Bucket](./assets/create-bucket-preview.png)
+- Select Create Bucket
+
 If you want to skip to the end, just click below to launch the app immediately in a free sandbox environment. All you need is a GitHub ID to create an account and provide Wasabi S3 configs in Advanced Configurations.
 
 [Run in Acorn](https://acorn.io/run/ghcr.io/infracloudio/jellyfin-acorn:v10.%23.%23-%23?ref=slayer321&name=jellyfin)
@@ -20,6 +30,7 @@ _Note: Everything shown in this tutorial can be found in [this repository](https
 
 - Acorn CLI: The CLI allows you to interact with the Acorn Runtime as well as Acorn to deploy and manage your applications. Refer to the [Installation documentation](https://docs.acorn.io/installation/installing) to install Acorn CLI for your environment.
 - A GitHub account is required to sign up and use the Acorn Platform.
+- Access to your Wasabi S3 bucket
 
 ## Acorn Login
 
@@ -207,24 +218,12 @@ The above Acornfile has the following elements:
 We have already logged in using Acorn CLI now you can directly deploy applications on your sandbox on the Acorn platform. Run the following command from the root of the directory.
 
 ```
-$ acorn run -n jellyfin . --access_key <>  --bucket_name <> --secret_key <>
+$ acorn run -n jellyfin . --access_key <> --bucket_name <> --secret_key <>
 ```
 
 Below is what the output looks like.
 
 ![](./assets/jellyfin-local-run.png)
-
-
-## Jellyfin Application
-
-In this tutorial till now we show how we can deploy our jellyfin server with our media content on s3 bucket by providing all the details. 
-
-Once we provide all the login details and when selecting the folder select it as `/jellyfinmedia` as that's where we have copied the s3 media. Below is what our jellyfin dashboard looks like once we have everything running.You can see all the four photos that I have on s3 bucket.
-
-![](./assets/jellyfin-dashboard.png)
-
-If you are looking to host your local media to jellyfin you just need to make some minor changes to acornfile and run it using acorn cli from your local system.You need to remove two fields, first is the whole `sidecars` field and then the `bucketsync` field inside the current acornfile.Now replace the `/jellyfinmedia` field with your local directory. Currently if looks like `"/jellyfinmedia": "volume://jellyfinmedia"` change it to `"/jellyfinmedia": "./your/localmedia/path"`.
-
 
 ## What's Next?
 
