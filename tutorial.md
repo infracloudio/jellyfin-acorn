@@ -12,11 +12,21 @@ Steps to set up your Wasabi S3 Bucket:
 
 - Sign in to Wasabi - https://console.wasabisys.com/login
 - Go to Buckets and select Create Bucket. Add the required details such as name and region. 
-Please Note: Be sure to provide the corresponding "endpoint URL" in the "args" while deploying Plex. Current Defaults- region:"us-east-1" and endpoint_url:"s3.wasabisys.com" 
+Please Note: Be sure to provide the corresponding "endpoint URL" in the "args" while deploying Jellyfin. Current Defaults- region:"us-east-1" and endpoint_url:"s3.wasabisys.com".
+
 ![Select Region](./assets/select-region.png)
-- Click on Next and choose the required Bucket Settings
+
+- Click on Next and choose the required Bucket Settings.
+
 ![Create Bucket](./assets/create-bucket-preview.png)
-- Select Create Bucket
+
+- Select Create Bucket.
+- Once the bucket is create, you can now upload your artifacts.
+- Now, to access the bucket need to create Access Keys. Go to Access Keys and select Create Access Key for Root or Sub-User as per requirement.
+- Save the Access Keys safely. 
+
+We will be using the above Bucket and Access Details to sync the Wasabi S3 bucket and Jellyfin. 
+
 
 If you want to skip to the end, just click below to launch the app immediately in a free sandbox environment. All you need is a GitHub ID to create an account and provide Wasabi S3 configs in Advanced Configurations.
 
