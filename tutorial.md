@@ -1,14 +1,14 @@
 # Deploying Jellyfin on Acorn
 
-[Jellyfin](https://jellyfin.org/) is the volunteer-built media solution that puts you in control of your media. Stream to any device from your own server, with no strings attached. Your media, your server, your way.
+[Jellyfin](https://jellyfin.org/) stands out as a media solution crafted by dedicated volunteers, offering you complete control over your media. Effortlessly stream from your personal server to any device according to your preferences – it's your media, your server, your way.
 
-Jellyfin is a popular media server solution, valued for its open-source nature and robust features that empower users to manage and stream their media content seamlessly. When deployed on [Acorn](http://www.acorn.io) platform offering a generous free sandbox accessible to all through GitHub registration, Jellyfin gains distinct advantages. To deploy an application on Acorn we need to define our application as an [Acornfile](https://docs.acorn.io/reference/acornfile), which will produce the Acorn Image that we can deploy on the platform.  In this tutorial, we will explore how to provision a sample Jellyfin Server on Acorn.
+Recognized for its open-source nature and user-friendly features, Jellyfin is a popular media server. When utilized on the [Acorn](http://www.acorn.io) platform, which grants free access to a sandbox via GitHub, Jellyfin enjoys additional advantages. Deploying it on Acorn involves describing the application in an [Acornfile](https://docs.acorn.io/reference/acornfile), generating an Acorn Image for seamless deployment. This tutorial guides you through establishing a Jellyfin Server on Acorn.
 
-We will be deploying Jellyfin in conjuction with [Wasabi](https://wasabi.com/hot-cloud-storage/),one of the most affordable online storage options available. You can store all of your media on it with as little as $6.99 TB/Month, with no egress charges. 
+We'll deploy Jellyfin alongside [Wasabi](https://wasabi.com/hot-cloud-storage/), an affordable online storage option. For as little as $6.99 per TB/Month, you can store all your media with no additional charges for data transfer.
 
-To start using the application, you need to create your own Wasabi S3 bucket by registering to Wasabi. Once signed in, populate the Wasabi S3 bucket with your favourite Photos, Movies or Videos and generate Access Credentials. We will be using these credentials to connect to Jellyfin to download the Media using [Rclone](https://rclone.org/). We have two Rclone Jobs : rclone-init: to perform one-time initial sync of Jellyfin with Wasabi S3 and rclone-cronjob: runs as a scheduled cronjob for periodic Data Sync from the Wasabi S3 bucket and Jellyfn Media volume with default cron schedule of every 6hrs.
+To begin, sign up with Wasabi to create a personalized S3 bucket. Once signed in, populate the bucket with your preferred photos, movies, or videos, and generate Access Credentials. These credentials facilitate the connection between Jellyfin and Wasabi, enabling media downloads using [Rclone](https://rclone.org/). The process involves two Rclone jobs: rclone-init for the initial sync and rclone-cronjob, a scheduled task syncing data from Wasabi S3 to the Jellyfin Media volume every 6 hours.
 
-Steps to set up your Wasabi S3 Bucket:
+## Steps to set up your Wasabi S3 Bucket:
 
 - Sign in to Wasabi - https://console.wasabisys.com/login
 - Go to Buckets and select Create Bucket. Add the required details such as name and region. 
